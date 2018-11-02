@@ -39,6 +39,8 @@ def getPlaylistAssets(playlistId):
 	return playlist["assets"]
 
 def removeAsset(playlistIds,assetId):
+	if ('ALL' in playlistIds):
+		playlistIds = getPlaylistIds()
 	for playlistId in playlistIds:
 		originalAssets = getPlaylistAssets(playlistId)
 		newAssets = []
@@ -50,6 +52,8 @@ def removeAsset(playlistIds,assetId):
 	return 0
 
 def replaceAsset(playlistIds,oldAssetId,newAssetId,duration):
+	if ('ALL' in playlistIds):
+		playlistIds = getPlaylistIds()
 	for playlistId in playlistIds:
 		originalAssets = getPlaylistAssets(playlistId)
 		newAssets = []
