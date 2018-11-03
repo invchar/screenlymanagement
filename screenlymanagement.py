@@ -13,7 +13,7 @@ session = requests.Session()
 session.headers = {"Authorization":"Token {}".format(API_KEY),"content-type":"application/json"}
 
 parser = argparse.ArgumentParser(description='Manage Screenly via API')
-parser.add_argument('--action', choices=['enablePlaylists','removeAsset','replaceAsset'])
+parser.add_argument('--action', choices=['enablePlaylists','removeAsset','replaceAsset','dumpPlaylists'])
 parser.add_argument('--playlistIds')
 parser.add_argument('--assetId')
 parser.add_argument('--oldAssetId')
@@ -36,8 +36,13 @@ def getPlaylistIds():
 		playlistIds.append(playlist["id"])
 	return playlistIds
 
+def getPlaylists():
+	r = session.get('{}/{}/playlists/'.format(HOST,API_ROOT))
+	playlists = r.json()
+	return playlists
+
 def getPlaylistAssetIds(playlistId):
-	r = session.get((HOST + API_ROOT + "/playlists/{}".format(playlistId)))
+	r = session.get('{}/{}/playlists/{}'.format(HOST,API_ROOT,playlistId))
 	playlist = r.json()
 	assets = playlist["assets"]
 	assetIds = []
@@ -49,6 +54,17 @@ def getPlaylistAssets(playlistId):
 	r = session.get('{}/{}/playlists/{}/'.format(HOST,API_ROOT,playlistId))
 	playlist = r.json()
 	return playlist["assets"]
+
+def dumpPlaylists():
+	playlists = getPlaylists()
+	datafile = open("data.txt", "w")
+	data = {"playlists":[]}
+	for playlist in playlists:
+		assets = getPlaylistAssets(playlist['id'])
+		playlist['assets'] = assets
+		data["playlists"].append(playlist)
+	json.dump(data,datafile,indent=2)
+	return 0
 
 def removeAsset(playlistIds,assetId):
 	if ('ALL' in playlistIds):
@@ -85,3 +101,5 @@ if (vars(args)['action']):
 		removeAsset(vars(args)['playlistIds'],vars(args)['assetId'])
 	if (vars(args)['action'] == 'replaceAsset'):
 		replaceAsset(vars(args)['playlistIds'],vars(args)['oldAssetId'],vars(args)['newAssetId'],vars(args)['duration'])
+	if (vars(args)['action'] == 'dumpPlaylists'):
+		dumpPlaylists()
