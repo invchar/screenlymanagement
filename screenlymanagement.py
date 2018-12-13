@@ -19,6 +19,7 @@ parser.add_argument('--assetId')
 parser.add_argument('--oldAssetId')
 parser.add_argument('--newAssetId')
 parser.add_argument('--duration')
+parser.add_argument('--filepath')
 args = parser.parse_args()
 
 def enablePlaylists(playlistIds, enabled):
@@ -57,7 +58,7 @@ def getPlaylistAssets(playlistId):
 
 def dumpPlaylists():
 	playlists = getPlaylists()
-	datafile = open("data.txt", "w")
+	datafile = open("{}data.json".format(vars(args)['filepath']), "w")
 	data = {"playlists":[]}
 	for playlist in playlists:
 		assets = getPlaylistAssets(playlist['id'])
