@@ -14,13 +14,11 @@ session = requests.Session()
 session.headers = {"Authorization":"Token {}".format(API_KEY),"content-type":"application/json"}
 
 parser = argparse.ArgumentParser(description='Manage Screenly via API')
-parser.add_argument('--action', choices=['enablePlaylists','removeAsset','replaceAsset','dumpPlaylists'])
-parser.add_argument('--playlistIds')
-parser.add_argument('--assetId')
-parser.add_argument('--oldAssetId')
-parser.add_argument('--newAssetId')
+parser.add_argument('--replace')
+parser.add_argument('--with')
+parser.add_argument('--playlists')
 parser.add_argument('--duration')
-parser.add_argument('--filepath')
+parser.add_argument('--dump')
 args = parser.parse_args()
 
 def enablePlaylists(playlistIds, enabled):
@@ -30,43 +28,43 @@ def enablePlaylists(playlistIds, enabled):
 		session.patch((HOST + API_ROOT + "/playlists/{}/".format(playlistId)),({"is_enabled":enabled}))
 	return 0
 
-def getPlaylistIds():
-	r = session.get('{}/{}/playlists/'.format(HOST,API_ROOT))
-	playlists = r.json()
-	playlistIds = []
-	for playlist in playlists:
-		playlistIds.append(playlist["id"])
-	return playlistIds
-
 def getPlaylists():
 	r = session.get('{}/{}/playlists/'.format(HOST,API_ROOT))
 	playlists = r.json()
 	return playlists
 
-def getPlaylistAssetIds(playlistId):
-	r = session.get('{}/{}/playlists/{}'.format(HOST,API_ROOT,playlistId))
-	playlist = r.json()
-	assets = playlist["assets"]
-	assetIds = []
-	for asset in assets:
-		assetIds.append(asset["_id"])
-	return assetIds
+def getPlaylistIds():
+	playlists = getPlaylists()
+	playlistIds = []
+	for playlist in playlists:
+		playlistIds.append(playlist["id"])
+	return playlistIds
 
 def getPlaylistAssets(playlistId):
 	r = session.get('{}/{}/playlists/{}/'.format(HOST,API_ROOT,playlistId))
 	playlist = r.json()
 	return playlist["assets"]
 
-def dumpPlaylists():
-	playlists = getPlaylists()
-	datafile = open("{}data.json".format(vars(args)['filepath']), "w")
-	data = {"playlists":[]}
-	for playlist in playlists:
-		assets = getPlaylistAssets(playlist['id'])
-		playlist['assets'] = assets
-		data["playlists"].append(playlist)
-	json.dump(data,datafile,indent=2)
-	return 0
+def getPlaylistAssetIds(playlistId):
+	assets = getPlaylistAssets(playlistId)
+	assetIds = []
+	for asset in assets:
+		assetIds.append(asset["id"])
+	return assetIds
+
+def dumpPlaylists(path):
+	if (path.endswith(".json")):
+		playlists = getPlaylists()
+		datafile = open(path, "w")
+		data = {"playlists":[]}
+		for playlist in playlists:
+			assets = getPlaylistAssets(playlist['id'])
+			playlist['assets'] = assets
+			data["playlists"].append(playlist)
+		json.dump(data,datafile,indent=2)
+		return 0
+	else:
+		print("Specify path and file with .json extension for dump")
 
 def removeAsset(playlistIds,assetId):
 	if ('ALL' in playlistIds):
@@ -75,9 +73,10 @@ def removeAsset(playlistIds,assetId):
 		originalAssets = getPlaylistAssets(playlistId)
 		newAssets = []
 		for asset in originalAssets:
-			if (asset["_id"] != assetId):
-				asset["id"] = asset["_id"]
+			if (asset["id"] != assetId):
 				newAssets.append(asset)
+			else:
+				print("Removing asset {} from playlist {}".format(asset["id"],playlistId))
 		session.patch('{}/{}/playlists/{}/'.format(HOST,API_ROOT,playlistId),data = json.dumps({"assets":newAssets}))
 	return 0
 
@@ -88,20 +87,15 @@ def replaceAsset(playlistIds,oldAssetId,newAssetId,duration):
 		originalAssets = getPlaylistAssets(playlistId)
 		newAssets = []
 		for asset in originalAssets:
-			if (asset["_id"] == oldAssetId):
+			if (asset["id"] == oldAssetId):
+				print("Replacing asset {} with {} in playlist {}".format(oldAssetId,newAssetId,playlistId))
 				newAssets.append({"id":newAssetId,"duration":duration})
 			else:
-				asset["id"] = asset["_id"]
 				newAssets.append(asset)
 		session.patch('{}/{}/playlists/{}/'.format(HOST,API_ROOT,playlistId),data = json.dumps({"assets":newAssets}))
 	return 0
 
-if (vars(args)['action']):
-	if (vars(args)['action'] == 'enablePlaylists'):
-		enablePlaylists(vars(args)['playlistIds'],True)
-	if (vars(args)['action'] == 'removeAsset'):
-		removeAsset(vars(args)['playlistIds'],vars(args)['assetId'])
-	if (vars(args)['action'] == 'replaceAsset'):
-		replaceAsset(vars(args)['playlistIds'],vars(args)['oldAssetId'],vars(args)['newAssetId'],vars(args)['duration'])
-	if (vars(args)['action'] == 'dumpPlaylists'):
-		dumpPlaylists()
+if (vars(args)['replace']):
+	replaceAsset("ALL",vars(args)['replace'],vars(args)['with'],vars(args)['duration'])
+if (vars(args)['dump']):
+	dumpPlaylists(vars(args)['dump'])
