@@ -30,6 +30,10 @@ def enablePlaylists(playlistIds, enabled):
 
 def getPlaylists():
 	r = session.get('{}/{}/playlists/'.format(HOST,API_ROOT))
+	if (r.status_code == 200):
+		print("API call for getPlaylists succeeded...")
+	else:
+		sys.exit("API call for getPlaylists failed after response code " + str(r.status_code))
 	playlists = r.json()
 	return playlists
 
@@ -42,6 +46,10 @@ def getPlaylistIds():
 
 def getPlaylistAssets(playlistId):
 	r = session.get('{}/{}/playlists/{}/'.format(HOST,API_ROOT,playlistId))
+	if (r.status_code == 200):
+		print("API call for getPlaylists succeeded...")
+	else:
+		sys.exit("API call for getPlaylists failed after response code " + str(r.status_code))
 	playlist = r.json()
 	return playlist["assets"]
 
@@ -92,7 +100,11 @@ def replaceAsset(playlistIds,oldAssetId,newAssetId,duration):
 				newAssets.append({"id":newAssetId,"duration":duration})
 			else:
 				newAssets.append(asset)
-		session.patch('{}/{}/playlists/{}/'.format(HOST,API_ROOT,playlistId),data = json.dumps({"assets":newAssets}))
+		r = session.patch('{}/{}/playlists/{}/'.format(HOST,API_ROOT,playlistId),data = json.dumps({"assets":newAssets}))
+		if (r.status_code == 200):
+			print("API call for replaceAsset succeeded...")
+		else:
+			sys.exit("API call for replaceAsset failed after response code " + str(r.status_code))
 	return 0
 
 if (vars(args)['replace']):
